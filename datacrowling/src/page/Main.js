@@ -2,98 +2,96 @@ import React, { useState } from 'react';
 import Content from './content/Content';
 import Tab from './tab/Tab';
 import styled from 'styled-components';
+import Asinitem from './asinitem/Asinitem';
 
 const Main = () => {
   const [inputValue, setInputValue] = useState('');
-  const [asinData, setAsinDate] = useState('');
-
-  // const AsinProducts = asinData?.products[0];
-
+  const [asinData, setAsinData] = useState([]); // fetch response
+  const [asinInput, setAsinInput] = useState([]); // fetch request => forloop
   const KEEPA_KEY = process.env.REACT_APP_KEEPA_KEY;
 
-  const handleSelect = e => {
-    // onChangeAmount(cart.id, Number(e.target.value));
-  };
+  const handleSelect = e => {};
 
   const onChangeHandler = e => {
     setInputValue(e.target.value);
   };
 
-  const submitHandler = () => {
-    if (!inputValue || inputValue.includes(' ')) {
+  const addHandler = () => {
+    if (
+      !inputValue ||
+      inputValue.includes(' ') ||
+      (asinInput.length > 0 && inputValue.includes(asinInput))
+    ) {
       alert('Check AsinCode');
       setInputValue('');
       return;
+    } else {
+      setAsinInput([...asinInput, inputValue]);
+      setInputValue('');
     }
-    fetch(
-      // domain, stats, days, ra
-      `http://api.keepa.com/product?key=${KEEPA_KEY}&domain=1&asin=${inputValue}&stats=180&days=180&rating=1&history=1&only-live-offers=0&rental=0&buybox=0`
-    )
-      .then(res => res.json())
-      .then(data => setAsinDate(data.products[0].imagesCSV.split(',')));
   };
 
-  console.log('data : ', asinData);
+  const submitHandler = async () => {
+    if (!asinInput) return;
+    setAsinData([]);
+    for (let i = 0; i < asinInput.length; i++) {
+      await fetch(
+        `http://api.keepa.com/product?key=${KEEPA_KEY}&domain=1&asin=${asinInput[i]}&stats=180&days=180&rating=1&history=1&only-live-offers=0&rental=0&buybox=0`
+      )
+        .then(res => res.json())
+        .then(data =>
+          setAsinData(prevAsinData => [...prevAsinData, data.products[0]])
+        );
+    }
+    setAsinInput([]);
+  };
+
+  console.log('asin Data :', asinData);
 
   return (
     <div>
       <SearchNav>
-        <Select>
-          <SelectOption>
-            onChange={handleSelect}
-            <option value="1">com</option>
-            <option value="2">uk</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-          </SelectOption>
-          <SelectOption>
-            onChange={handleSelect}
-            <option value="1">com</option>
-            <option value="2">uk</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-          </SelectOption>
-          <SelectOption>
-            onChange={handleSelect}
-            <option value="1">com</option>
-            <option value="2">uk</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-          </SelectOption>
-          <SelectOption>
-            onChange={handleSelect}
-            <option value="1">com</option>
-            <option value="2">uk</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-          </SelectOption>
-          <SelectOption>
-            onChange={handleSelect}
-            <option value="1">com</option>
-            <option value="2">uk</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-          </SelectOption>
-        </Select>
         <SearchWrapper>
+          <Select>
+            <SelectOption>
+              onChange={handleSelect}
+              <option value="1">com</option>
+              <option value="2">uk</option>
+            </SelectOption>
+          </Select>
           <Search
             type="text"
             value={inputValue}
-            // value={search}
             onChange={onChangeHandler}
-            // onKeyDown={e => onKeyDown(e)}
             placeholder="Asin code"
           />
-          <ClickButton onClick={submitHandler}>Submit</ClickButton>
+          <ClickButton onClick={addHandler}>ADD ASIN CODE</ClickButton>
         </SearchWrapper>
       </SearchNav>
-      <Tab />
-      <Content />
+      <FillterSection>
+        <AsinItems>
+          {asinInput.map((data, i) => {
+            return (
+              <Asinitem
+                key={i}
+                data={data}
+                setAsinInput={setAsinInput}
+                asinInput={asinInput}
+              />
+            );
+          })}
+        </AsinItems>
+        <ClickButton onClick={submitHandler}>Submit</ClickButton>
+      </FillterSection>
+      <Body>
+        <Tab />
+        <ContentSection>
+          {asinData &&
+            asinData.map((data, idx) => {
+              return <Content key={idx} data={data} />;
+            })}
+        </ContentSection>
+      </Body>
     </div>
   );
 };
@@ -102,27 +100,40 @@ export default Main;
 const SearchNav = styled.div`
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 40px 30px;
-  background-color: lightgray;
+  border-bottom: 2px #ddd solid;
 `;
 
 const SearchWrapper = styled.div`
-  margin-left: 80px;
+  display: flex;
+  margin-right: 50px;
 `;
 const Search = styled.input`
   padding: 10px 25px;
   margin-right: 10px;
   width: 280px;
-  border: none;
+  border: 2px #ddd solid;
+  border-radius: 8px;
 `;
 const ClickButton = styled.button`
+  width: 200px;
+  height: 50px;
   padding: 10px 25px;
+  font-size: 16px;
   border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  &:hover {
+    background-color: #ccc;
+  }
 `;
 const Select = styled.div`
   display: flex;
   align-items: center;
-  margin-left: 50px;
+  margin: 0 20px;
+  border: 2px #ddd solid;
+  border-radius: 8px;
 `;
 const SelectOption = styled.select`
   margin-left: 14px;
@@ -130,7 +141,7 @@ const SelectOption = styled.select`
   border: none;
   border: 1.5px solid rgba(255, 254, 242, 0.1);
   border-radius: 8px;
-  /* color: #fff; */
+
   background-color: transparent;
   font-size: 15px;
   text-align-last: center;
@@ -139,4 +150,29 @@ const SelectOption = styled.select`
   &:hover {
     border-color: rgba(255, 254, 242, 0.8);
   }
+`;
+
+const FillterSection = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+`;
+
+const AsinItems = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  width: 80%;
+  height: 100%;
+`;
+
+const Body = styled.div`
+  display: flex;
+
+  margin-top: 20px;
+`;
+
+const ContentSection = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
 `;
